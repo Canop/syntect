@@ -8,6 +8,7 @@ use std::io::{self, BufReader};
 use std::fs::File;
 use std::path::Path;
 // use util::debug_print_ops;
+use crate::CrashError;
 
 /// Simple way to go directly from lines of text to colored tokens.
 ///
@@ -57,14 +58,14 @@ impl<'a> HighlightLines<'a> {
     }
 
     /// Highlights a line of a file
-    pub fn highlight<'b>(&mut self, line: &'b str, syntax_set: &SyntaxSet) -> Vec<(Style, &'b str)> {
+    pub fn highlight<'b>(&mut self, line: &'b str, syntax_set: &SyntaxSet) -> Result<Vec<(Style, &'b str)>, CrashError> {
         // println!("{}", self.highlight_state.path);
-        let ops = self.parse_state.parse_line(line, syntax_set);
+        let ops = self.parse_state.parse_line(line, syntax_set)?;
         // use util::debug_print_ops;
         // debug_print_ops(line, &ops);
         let iter =
             HighlightIterator::new(&mut self.highlight_state, &ops[..], line, &self.highlighter);
-        iter.collect()
+        Ok(iter.collect())
     }
 }
 

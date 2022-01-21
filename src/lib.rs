@@ -29,6 +29,12 @@ extern crate serde_derive;
 #[macro_use]
 extern crate pretty_assertions;
 
+
+#[macro_use]
+mod crash;
+
+pub use crash::*;
+
 #[cfg(any(feature = "dump-load-rs", feature = "dump-load", feature = "dump-create", feature = "dump-create-rs"))]
 pub mod dumps;
 #[cfg(feature = "parsing")]

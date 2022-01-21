@@ -11,6 +11,7 @@ use std::fmt::Write;
 
 use std::io::{self, BufRead};
 use std::path::Path;
+use crate::CrashError;
 
 /// Output HTML for a line of code with `<span>` elements using class names
 ///
@@ -86,8 +87,8 @@ impl<'a> ClassedHTMLGenerator<'a> {
     ///
     /// *Note:* This function requires `line` to include a newline at the end and
     /// also use of the `load_defaults_newlines` version of the syntaxes.
-    pub fn parse_html_for_line_which_includes_newline(&mut self, line: &str) {
-        let parsed_line = self.parse_state.parse_line(line, self.syntax_set);
+    pub fn parse_html_for_line_which_includes_newline(&mut self, line: &str) -> Result<(), CrashError> {
+        let parsed_line = self.parse_state.parse_line(line, self.syntax_set)?;
         let (formatted_line, delta) = line_tokens_to_classed_spans(
             line,
             parsed_line.as_slice(),
@@ -96,6 +97,7 @@ impl<'a> ClassedHTMLGenerator<'a> {
         );
         self.open_spans += delta;
         self.html.push_str(formatted_line.as_str());
+        Ok(())
     }
 
     /// Parse the line of code and update the internal HTML buffer with tagged HTML
@@ -268,12 +270,12 @@ pub fn highlighted_html_for_string(
     ss: &SyntaxSet,
     syntax: &SyntaxReference,
     theme: &Theme,
-) -> String {
+) -> Result<String, CrashError> {
     let mut highlighter = HighlightLines::new(syntax, theme);
     let (mut output, bg) = start_highlighted_html_snippet(theme);
 
     for line in LinesWithEndings::from(s) {
-        let regions = highlighter.highlight(line, ss);
+        let regions = highlighter.highlight(line, ss)?;
         append_highlighted_html_for_styled_line(
             &regions[..],
             IncludeBackground::IfDifferent(bg),
@@ -281,7 +283,7 @@ pub fn highlighted_html_for_string(
         );
     }
     output.push_str("</pre>\n");
-    output
+    Ok(output)
 }
 
 /// Convenience method that combines `start_highlighted_html_snippet`, `styled_line_to_highlighted_html`
@@ -301,7 +303,8 @@ pub fn highlighted_html_for_file<P: AsRef<Path>>(
     let mut line = String::new();
     while highlighter.reader.read_line(&mut line)? > 0 {
         {
-            let regions = highlighter.highlight_lines.highlight(&line, ss);
+            let regions = highlighter.highlight_lines.highlight(&line, ss)
+                .map_err(|_| io::Error::new(io::ErrorKind::Other, "syntect crashed"))?;
             append_highlighted_html_for_styled_line(
                 &regions[..],
                 IncludeBackground::IfDifferent(bg),
