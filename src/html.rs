@@ -110,10 +110,11 @@ impl<'a> ClassedHTMLGenerator<'a> {
     /// These versions of the syntaxes can have occasionally incorrect highlighting
     /// but this function can't be changed without breaking compatibility so is deprecated.
     #[deprecated(since="4.5.0", note="Please use `parse_html_for_line_which_includes_newline` instead")]
-    pub fn parse_html_for_line(&mut self, line: &str) {
-        self.parse_html_for_line_which_includes_newline(line);
+    pub fn parse_html_for_line(&mut self, line: &str) -> Result<(), CrashError> {
+        self.parse_html_for_line_which_includes_newline(line)?;
         // retain newline
         self.html.push('\n');
+        Ok(())
     }
 
     /// Close all open `<span>` tags and return the finished HTML string
